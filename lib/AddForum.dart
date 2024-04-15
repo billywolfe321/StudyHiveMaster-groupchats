@@ -33,29 +33,19 @@ class _AddForumState extends State<AddForum> {
         'title': title,
         'content': content,
         'authorID': userId,
-        // Use ServerValue.timestamp for real-time timestamp from Firebase
         'timestamp': ServerValue.timestamp,
-        // Initialize 'responses' as an empty map, assuming responses will be added later
         'responses': {},
       };
-
-      // Push the new forum to Firebase under the 'Forums' node
       await _databaseReference.child('Forums').push().set(forum);
-
-      // Clear the text fields after submission
       _titleController.clear();
       _contentController.clear();
-
-      // Navigate back or show a confirmation message
       Navigator.pop(context);
     } else {
-      // Show an error if title or content is empty
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Title and content cannot be empty')),
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {

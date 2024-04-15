@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'index.dart';
-import 'Forums.dart';
-import 'ChatPage.dart';
-import 'UserProfile.dart';
 import 'CustomAppBar.dart';
-
 
 class HomeScreen extends StatelessWidget {
   @override

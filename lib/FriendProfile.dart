@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:login_and_registration/CustomAppBar.dart';
 import 'UserProfile.dart';
-import 'ChatPage.dart';
-import 'Forums.dart';
 
 class FriendProfile extends StatefulWidget {
   final String friendId;
@@ -16,6 +15,7 @@ class FriendProfile extends StatefulWidget {
 
 class _FriendProfileState extends State<FriendProfile> {
   final databaseReference = FirebaseDatabase.instance.ref();
+  final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
   String firstName = '';
   String lastName = '';
@@ -50,40 +50,18 @@ class _FriendProfileState extends State<FriendProfile> {
     }
   }
 
+  void removeFriend() async {
+    await databaseReference.child(
+        'Users/$currentUserId/friends/${widget.friendId}').remove();
+    await databaseReference.child(
+        'Users/${widget.friendId}/friends/$currentUserId').remove();
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(),
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.article), label: "Forums"),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.account_box), label: "Profile"),
-        ],
-        backgroundColor: Color(0xffae32ff),
-        elevation: 8,
-        iconSize: 22,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        onTap: (value) {
-          if (value == 0) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => Forums()));
-          } else if (value == 1) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => ChatPage()));
-          } else if (value == 2) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => UserProfile()));
-          }
-        },
-      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -91,7 +69,6 @@ class _FriendProfileState extends State<FriendProfile> {
             SizedBox(height: 20),
             CircleAvatar(radius: 60,
                 backgroundImage: AssetImage("assets/profilePicture1.png")),
-            // Placeholder image
             SizedBox(height: 10),
             Text("$firstName $lastName",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
@@ -121,11 +98,18 @@ class _FriendProfileState extends State<FriendProfile> {
                 ],
               ),
             ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: removeFriend,
+              child: Text("Remove Friend"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
-
-

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 class OtherUserProfile extends StatefulWidget {
@@ -10,51 +11,65 @@ class OtherUserProfile extends StatefulWidget {
   _OtherUserProfileState createState() => _OtherUserProfileState();
 }
 
-
 class _OtherUserProfileState extends State<OtherUserProfile> {
   final databaseReference = FirebaseDatabase.instance.ref();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // User data variables
   String firstName = '';
   String lastName = '';
   String username = '';
   String bio = '';
-  // Add other necessary user data variables
+  String university = '';
+  String course = '';
 
   @override
   void initState() {
     super.initState();
-    print("OtherUserProfile initState for userID: ${widget.userID}");
     fetchUserData();
   }
-
 
   Future<void> fetchUserData() async {
     final userSnapshot = await databaseReference.child('Users/${widget.userID}').get();
     if (userSnapshot.exists) {
-      // Ensure the snapshot value is not null and cast it safely to Map<String, dynamic>
-      final userData = userSnapshot.value as Map<String, dynamic>?;
-      if (userData != null) {  // Check if the casted userData is not null
-        setState(() {
-          firstName = userData['firstName'] ?? '';
-          lastName = userData['lastName'] ?? '';
-          username = userData['username'] ?? '';
-          bio = userData['bio'] ?? '';
-          // Set other user data state variables
-        });
-      }
+      final userData = Map<String, dynamic>.from(userSnapshot.value as Map);
+      setState(() {
+        firstName = userData['firstName'] ?? '';
+        lastName = userData['lastName'] ?? '';
+        username = userData['username'] ?? '';
+        bio = userData['bio'] ?? '';
+        university = userData['university'] ?? '';
+        course = userData['course'] ?? '';
+      });
     }
   }
 
+  void sendFriendRequest() async {
+    User? currentUser = _auth.currentUser;
+    if (currentUser != null && currentUser.uid != widget.userID) {
+      await databaseReference.child('Users/${currentUser.uid}/friendRequestsSent/${widget.userID}').set('pending');
+      await databaseReference.child('Users/${widget.userID}/friendRequestsReceived/${currentUser.uid}').set('pending');
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Friend request sent!")));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(username)),
+      appBar: AppBar(
+        title: Text('Other User Profile'),
+        backgroundColor: Color(0xffad32fe),
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile UI components like profile picture, bio, etc.
+            CircleAvatar(radius: 60),
+            Text("$firstName $lastName", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            Text(username, style: TextStyle(fontSize: 18)),
+            ElevatedButton(
+              onPressed: sendFriendRequest,
+              child: Text("Send Friend Request"),
+            ),
           ],
         ),
       ),

@@ -69,7 +69,7 @@ class AccountSettings extends StatelessWidget {
   }
 
   void _showChangeEmailDialog(BuildContext context) {
-    // Your existing logic for Change Email Dialog
+    //todo email dialog
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
@@ -92,7 +92,6 @@ class AccountSettings extends StatelessWidget {
                   await user!.delete();
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Account deleted successfully')));
-                  // Redirect user to login or another appropriate page
                 } catch (error) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete account. Please try again.')));
                 }

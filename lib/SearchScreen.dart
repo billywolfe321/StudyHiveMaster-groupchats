@@ -1,36 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'OtherUserProfile.dart';
+import 'FriendProfile.dart';
 
 class SearchScreen extends StatefulWidget {
-  final String searchQuery;
-
-  SearchScreen({required this.searchQuery});
-
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
 
-
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<dynamic> _searchResults = [];
+  List<Map<String, dynamic>> _searchResults = [];
+  String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
-  void searchDatabase(String query) async {
-    // Implement your search logic here
-    // For demonstration, let's assume we're searching for users by their username
+  void _performSearch(String query) async {
     DatabaseReference ref = FirebaseDatabase.instance.ref('Users');
-    DatabaseEvent event = await ref.orderByChild('username').equalTo(query).once();
+    DatabaseEvent event = await ref.once();
 
-    if (event.snapshot.value != null) {
-      // Assuming the result is a list of users
-      List<dynamic> users = [];
+    List<Map<String, dynamic>> results = [];
+    if (event.snapshot.exists) {
       event.snapshot.children.forEach((child) {
-        users.add(child.value);
-      });
+        if (child.key == currentUserId) {
+          return;
+        }
 
-      setState(() {
-        _searchResults = users;
+        Map<String, dynamic> userData = Map<String, dynamic>.from(child.value as Map);
+        String username = userData['username'] ?? '';
+
+        if (username.toLowerCase().contains(query.toLowerCase())) {
+          results.add({
+            'username': username,
+            'key': child.key,
+          });
+        }
       });
+    }
+
+    setState(() {
+      _searchResults = results.isEmpty ? [{'username': 'No results', 'key': ''}] : results;
+    });
+  }
+
+  void navigateToProfile(String userId) async {
+    final DatabaseReference ref = FirebaseDatabase.instance.ref();
+    final snapshot = await ref.child('Users/$currentUserId/friends/$userId').get();
+
+    if (snapshot.exists) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => FriendProfile(friendId: userId)),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => OtherUserProfile(userID: userId)),
+      );
     }
   }
 
@@ -38,23 +63,36 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color(0xffad32fe),
         title: TextField(
           controller: _searchController,
+          onChanged: (value) {
+            if (value.isNotEmpty) {
+              _performSearch(value);
+            } else {
+              setState(() => _searchResults.clear());
+            }
+          },
           decoration: InputDecoration(
-            hintText: 'Search...',
+            hintText: "Search...",
+            hintStyle: TextStyle(color: Colors.white),
+            border: InputBorder.none,
           ),
-          onChanged: searchDatabase,
+          style: TextStyle(color: Colors.white),
         ),
+        leading: BackButton(color: Colors.white),
       ),
-      body: ListView.builder(
+      body: ListView.separated(
         itemCount: _searchResults.length,
+        separatorBuilder: (context, index) => Divider(height: 1),
         itemBuilder: (context, index) {
           var result = _searchResults[index];
           return ListTile(
             title: Text(result['username']),
             onTap: () {
-              // Navigate based on the result type
-              // For example, if it's a user, navigate to UserProfile.dart
+              if (result.containsKey('key') && result['key'] != '') {
+                navigateToProfile(result['key']);
+              }
             },
           );
         },

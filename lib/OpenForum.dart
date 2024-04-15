@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'ReportPage.dart';
 
 enum CommentFilter { mostLiked, mostRecent, oldest }
 
@@ -35,7 +34,7 @@ class _OpenForumState extends State<OpenForum> {
     if (forumSnapshot.exists && forumSnapshot.value != null) {
       final commentsList = (forumSnapshot.child('responses').value as Map<dynamic, dynamic>?)
           ?.entries
-          .map((e) => Map<String, dynamic>.from(e.value))
+          .map((e) => Map<String, dynamic>.from(e.value)..['id'] = e.key)
           .toList() ?? [];
       sortComments(commentsList);
       setState(() {
@@ -65,20 +64,19 @@ class _OpenForumState extends State<OpenForum> {
   }
 
   Future<void> incrementThumbsUp(String commentId) async {
-    final commentRef = _databaseReference.child('Forums/${widget.forumId}/responses/$commentId');
-    final dataSnapshot = await commentRef.child('thumbsUp').get();
-    final currentCount = dataSnapshot.exists ? int.tryParse(dataSnapshot.value.toString()) ?? 0 : 0;
-    await commentRef.child('thumbsUp').set(currentCount + 1);
-    fetchForumData();
+    DatabaseReference thumbsUpRef = _databaseReference.child('Forums/${widget.forumId}/responses/$commentId/thumbsUp');
+    DataSnapshot snapshot = await thumbsUpRef.get();
+    int currentLikes = (snapshot.value ?? 0) as int;
+    await thumbsUpRef.set(currentLikes + 1);
   }
 
   Future<void> incrementThumbsDown(String commentId) async {
-    final commentRef = _databaseReference.child('Forums/${widget.forumId}/responses/$commentId');
-    final dataSnapshot = await commentRef.child('thumbsDown').get();
-    final currentCount = dataSnapshot.exists ? int.tryParse(dataSnapshot.value.toString()) ?? 0 : 0;
-    await commentRef.child('thumbsDown').set(currentCount + 1);
-    fetchForumData();
+    DatabaseReference thumbsDownRef = _databaseReference.child('Forums/${widget.forumId}/responses/$commentId/thumbsDown');
+    DataSnapshot snapshot = await thumbsDownRef.get();
+    int currentDislikes = (snapshot.value ?? 0) as int;
+    await thumbsDownRef.set(currentDislikes + 1);
   }
+
 
 
   void sortComments(List<Map<String, dynamic>> commentsList) {
@@ -96,43 +94,12 @@ class _OpenForumState extends State<OpenForum> {
     comments = commentsList;
   }
 
-  void navigateToReportPage(String commentId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ReportPage(forumId: widget.forumId, commentId: commentId)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(forumData?['title'] ?? 'Forum'),
         backgroundColor: Color(0xffad32fe),
-        actions: [
-          PopupMenuButton<CommentFilter>(
-            onSelected: (CommentFilter result) {
-              setState(() {
-                currentFilter = result;
-                sortComments(comments);
-              });
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<CommentFilter>>[
-              const PopupMenuItem<CommentFilter>(
-                value: CommentFilter.mostLiked,
-                child: Text('Most Liked'),
-              ),
-              const PopupMenuItem<CommentFilter>(
-                value: CommentFilter.mostRecent,
-                child: Text('Most Recent'),
-              ),
-              const PopupMenuItem<CommentFilter>(
-                value: CommentFilter.oldest,
-                child: Text('Oldest'),
-              ),
-            ],
-          ),
-        ],
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
@@ -161,10 +128,6 @@ class _OpenForumState extends State<OpenForum> {
                       onPressed: () => incrementThumbsDown(comment['id']),
                     ),
                     Text('${comment['thumbsDown'] ?? 0}'),
-                    IconButton(
-                      icon: Icon(Icons.report),
-                      onPressed: () => navigateToReportPage(comment['id']),
-                    ),
                   ],
                 ),
               )),
