@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'index.dart';
+import 'Friends.dart';
 
 class OpenDrawer extends StatelessWidget {
   @override
@@ -36,7 +37,7 @@ class OpenDrawer extends StatelessWidget {
                 // Handle the profile tap action
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Forums()),
+                  MaterialPageRoute(builder: (context) => ChatPage()),
                 );// // Close the drawer
               },
             ),
@@ -46,7 +47,7 @@ class OpenDrawer extends StatelessWidget {
                 // Handle the profile tap action
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Forums()),
+                  MaterialPageRoute(builder: (context) => Friends()),
                 );// // Close the drawer
               },
             ),
